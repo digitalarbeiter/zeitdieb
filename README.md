@@ -68,13 +68,13 @@ def create_app():
 FastAPI can be configured by calling `zeitdieb.fastapi()` inside of `create_app()`:
 
 ```python
-    class Settings(...):
-        ...
-        zeitdieb_format: Optional[str] = "6b"
+class Settings(...):
+    ...
+    zeitdieb_format: Optional[str] = "6b"
 
-    def create_app(...):
-        ...
-        zeitdieb.fastapi(app, settings)
+def create_app(...):
+    ...
+    zeitdieb.fastapi(app, settings)
 ```
 
 ### Settings client headers
