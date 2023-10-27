@@ -238,6 +238,33 @@ def flask(app):
         return response
 
 
+def fastapi(app, settings=None):
+    """
+    class Settings(...):
+        ...
+        zeitdieb_format: Optional[str] = "6b"
+
+    def create_app(...):
+        ...
+        zeitdieb.fastapi(app, settings)
+    """
+    print("wit")
+    fmt = getattr(settings, "zeitdieb_format", "")
+
+    @app.middleware("http")
+    async def fastapi_middleware(request, call_next):
+        print("wat")
+        if "X-Zeitdieb" not in request.headers:
+            return await call_next(request)
+        print("wot")
+        sw = StopWatch(trace=get_functions_to_trace(request.headers))
+        response = await call_next(request)
+        sw.finish()
+        print("wut")
+        print(f"{sw:{fmt}}")
+        return response
+
+
 if __name__ == "__main__":
     from time import sleep
     def foo():
