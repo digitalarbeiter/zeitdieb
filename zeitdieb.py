@@ -211,6 +211,30 @@ def pyramid(handler, registry):
     return tween
 
 
+def flask(app):
+    """
+    def create_app():
+        ...
+        my_flask_app.config["ZEITDIEB_FORMAT"] = "7b:0.5"
+        zeitdieb.flask(my_flask_app)
+    """
+    import flask
+    fmt = app.config.get("ZEITDIEB_FORMAT", "")
+
+    @app.before_request
+    def before():
+        if "X-Zeitdieb" not in flask.request.headers:
+            return
+        specs = flask.request.headers["X-Zeitdieb"].split(",")
+        flask.g.sw = StopWatch(trace=[load_dotted(spec) for spec in specs])
+
+    @app.after_request
+    def after(response):
+        flask.g.sw.finish()
+        print(f"{flask.g.sw:{fmt}}")
+        return response
+
+
 if __name__ == "__main__":
     from time import sleep
     def foo():
