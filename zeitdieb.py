@@ -277,19 +277,15 @@ def fastapi(app, settings=None):
         ...
         zeitdieb.fastapi(app, settings)
     """
-    print("wit")
     fmt = getattr(settings, "zeitdieb_format", "")
 
     @app.middleware("http")
     async def fastapi_middleware(request, call_next):
-        print("wat")
         if "X-Zeitdieb" not in request.headers:
             return await call_next(request)
-        print("wot")
         sw = StopWatch(trace=get_functions_to_trace(request.headers))
         response = await call_next(request)
         sw.finish()
-        print("wut")
         print(f"{sw:{fmt}}")
         return response
 
