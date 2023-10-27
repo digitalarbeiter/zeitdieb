@@ -91,7 +91,8 @@ class StopWatch:
             self.l_last[code] = frame.f_lineno
             self.t_last[code] = monotonic()
             return self.trace_line
-        self.finish_frame(frame)
+        if event == "return":
+            self.finish_frame(frame)
         return None
 
     def trace_scope(self, frame, _event, _arg):
