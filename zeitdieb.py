@@ -34,6 +34,7 @@ def format_time(time, *, precision, width):
     else:
         return " " * width
 
+
 class TimeFormatter:
     def __init__(self, width, thresholds, *, flags=()):
         self.width = width
@@ -51,7 +52,7 @@ class TimeFormatter:
         if "b" in self.flags and not final:
             size = int(time / self.max_time * (self.width * 8))
             full_blocks, last_block = divmod(size, 8)
-            blocks = "█"*full_blocks + " ▏▎▍▌▋▊▉"[last_block].strip()
+            blocks = "█" * full_blocks + " ▏▎▍▌▋▊▉"[last_block].strip()
             result = f"{blocks:{self.width}}"
         else:
             result = format_time(
@@ -62,6 +63,7 @@ class TimeFormatter:
         if final:
             result = f"\x1b[1m{result}"
         return colorize(result, self.color(time))
+
 
 class StopWatch:
     def __init__(self, *, trace=()):
@@ -123,7 +125,9 @@ class StopWatch:
     @staticmethod
     def code_name(code):
         try:
-            return next(ref for ref in gc.get_referrers(code) if callable(ref)).__qualname__
+            return next(
+                ref for ref in gc.get_referrers(code) if callable(ref)
+            ).__qualname__
         except (StopIteration, AttributeError):
             return code.co_name
 
@@ -157,7 +161,7 @@ class StopWatch:
             for lno, time, line in lines:
                 buffer.write(f"{formatter(time)} {lno:{max_lno_len}d} {line}\n")
                 total += time
-            buffer.write("─"*width + "\n")
+            buffer.write("─" * width + "\n")
             buffer.write(f"{formatter(total, final=True)}\n\n")
         return buffer.getvalue().strip()
 
@@ -166,7 +170,6 @@ class StopWatch:
 
     def __repr__(self):
         return f"<{type(self).__name__} ({'un'*(not self.result) + 'finished'})>"
-
 
     @classmethod
     def install(cls, *functions_to_trace):
@@ -203,6 +206,7 @@ def pyramid(handler, registry):
         zeitdieb.pyramid
     """
     fmt = registry.settings.get("zeitdieb.format", "")
+
     def tween(request):
         if "X-Zeitdieb" not in request.headers:
             return handler(request)
@@ -212,6 +216,7 @@ def pyramid(handler, registry):
         sw.finish()
         print(f"{sw:{fmt}}")
         return res
+
     return tween
 
 
@@ -223,6 +228,7 @@ def flask(app):
         zeitdieb.flask(my_flask_app)
     """
     import flask
+
     fmt = app.config.get("ZEITDIEB_FORMAT", "")
 
     @app.before_request
@@ -267,6 +273,7 @@ def fastapi(app, settings=None):
 
 if __name__ == "__main__":
     from time import sleep
+
     def foo():
         sw = StopWatch.install(bar)
         sleep(0.1)
