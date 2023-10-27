@@ -2,6 +2,7 @@ import inspect
 import io
 import gc
 import sys
+import importlib
 from collections import defaultdict, Counter
 from time import monotonic
 
@@ -175,20 +176,53 @@ class StopWatch:
         return stopwatch
 
 
-from time import sleep
-def foo():
-    sw = StopWatch.install(bar)
-    sleep(0.1)
-    sleep(0.3)
-    bar()
-    sleep(0.2)
-    sw.finish()
-    print(f"{sw:7b:0.2,0.1}")
+def load_dotted(spec):
+    module_path, _, callable_name = spec.partition(":")
+    spec = importlib.util.find_spec(module_path)
+    result = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(result)
+    for attribute in callable_name.split("."):
+        result = getattr(result, attribute)
+    return result
 
-def bar():
-    for _ in range(5):
-        sleep(0.1)
+
+def pyramid(handler, registry):
+    """
+    Somewhere in your Pyramid settings:
+
+    zeitdieb.format = 20b
+
+    pyramid.tweens =
+        ...
+        zeitdieb.pyramid
+    """
+    fmt = registry.settings.get("zeitdieb.format", "")
+    def tween(request):
+        if "X-Zeitdieb" not in request.headers:
+            return handler(request)
+
+        specs = request.headers["X-Zeitdieb"].split(",")
+        sw = StopWatch(trace=[load_dotted(spec) for spec in specs])
+        res = handler(request)
+        sw.finish()
+        print(f"{sw:{fmt}}")
+        return res
+    return tween
 
 
 if __name__ == "__main__":
+    from time import sleep
+    def foo():
+        sw = StopWatch.install(bar)
+        sleep(0.1)
+        sleep(0.3)
+        bar()
+        sleep(0.2)
+        sw.finish()
+        print(f"{sw:7b:0.2,0.1}")
+
+    def bar():
+        for _ in range(5):
+            sleep(0.1)
+
     foo()
