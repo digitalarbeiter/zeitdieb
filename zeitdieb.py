@@ -187,6 +187,11 @@ def load_dotted(spec):
     return result
 
 
+def get_functions_to_trace(headers):
+    specs = headers["X-Zeitdieb"].split(",")
+    return [load_dotted(spec) for spec in specs]
+
+
 def pyramid(handler, registry):
     """
     Somewhere in your Pyramid settings:
@@ -202,8 +207,7 @@ def pyramid(handler, registry):
         if "X-Zeitdieb" not in request.headers:
             return handler(request)
 
-        specs = request.headers["X-Zeitdieb"].split(",")
-        sw = StopWatch(trace=[load_dotted(spec) for spec in specs])
+        sw = StopWatch(trace=get_functions_to_trace(request.headers))
         res = handler(request)
         sw.finish()
         print(f"{sw:{fmt}}")
@@ -225,8 +229,7 @@ def flask(app):
     def before():
         if "X-Zeitdieb" not in flask.request.headers:
             return
-        specs = flask.request.headers["X-Zeitdieb"].split(",")
-        flask.g.sw = StopWatch(trace=[load_dotted(spec) for spec in specs])
+        flask.g.sw = StopWatch(trace=get_functions_to_trace(flask.request.headers))
 
     @app.after_request
     def after(response):
