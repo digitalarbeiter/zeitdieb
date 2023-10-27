@@ -38,11 +38,7 @@ The format spec looks like this: `[width][flags]:[threshold][,threshold]`.
 ## Integrations
 
 Zeitdieb can optionally be intregrated with Pyramid, Flask, or FastAPI. After
-you've done so, you can trigger tracing with the special header `X-Zeitdieb`:
-
-```bash
-$ curl https://.../ -H 'X-Zeitdieb: path.to.module:callable,path.to.othermodule:callable`
-```
+you've done so, you can trigger tracing with the special header `X-Zeitdieb`.
 
 ### Pyramid
 
@@ -80,3 +76,23 @@ FastAPI can be configured by calling `zeitdieb.fastapi()` inside of `create_app(
         ...
         zeitdieb.fastapi(app, settings)
 ```
+
+### Settings client headers
+
+To trigger the tracing of functions, you need to set an `X-Zeitdieb` header:
+
+#### curl
+
+```bash
+$ curl https://.../ -H 'X-Zeitdieb: path.to.module:callable,path.to.othermodule:callable`
+```
+
+#### jsonrpclib
+
+```python
+jsonrpclib.ServerProxy(host, headers={"X-Zeitdieb": "path.to.module:callable,path.to.othermodule:callable"})
+```
+
+## Acknowledgements
+
+This project was created as a result of a learning day @ [solute](https://www.solute.de/ger/).
