@@ -5,6 +5,7 @@ import sys
 import importlib
 from collections import defaultdict, Counter
 from time import monotonic
+from math import log
 
 
 class ColorPicker:
@@ -15,17 +16,23 @@ class ColorPicker:
         for threshold, color in zip(
             self.thresholds,
             [
-                31,  # red
-                33,  # yellow
+                (255, 0, 0),  # red
+                (255, 215, 0),  # orange
             ],
         ):
             if value > threshold:
                 return color
-        return 0
+        return (0, 255, 0)
 
 
-def colorize(value, color):
-    return f"\x1b[{color}m{value}\x1b[0m"
+def colorize(value, color, background=None):
+    r, g, b = color
+    result = f"\x1b[38;2;{r};{g};{b}m{value}\x1b[0m"
+    if background:
+        # warning: log scale!
+        r, g, b = background  # 0, 255, 255
+        result = f"\x1b[48;2;{r};{g};{b}m{result}"
+    return result
 
 
 def format_time(time, *, precision, width):
@@ -50,7 +57,12 @@ class TimeFormatter:
 
     def __call__(self, time, *, final=False):
         if "b" in self.flags and not final:
-            size = int(time / self.max_time * (self.width * 8))
+            if "l" in self.flags and time != 0:
+                # print("log:", time, log(time), self.max_time, log(self.max_time), log(time) / log(self.max_time), int(log(time) / log(self.max_time) * (self.width * 8)))
+                # 7.368624210357666e-06 -11.81827954349581 0.8887868821620941 -0.11789779980918104 100.24173108084997 4009
+                size = int(log(1+time) / log(1+self.max_time) * (self.width * 8))
+            else:
+                size = int(time / self.max_time * (self.width * 8))
             full_blocks, last_block = divmod(size, 8)
             blocks = "█" * full_blocks + " ▏▎▍▌▋▊▉"[last_block].strip()
             result = f"{blocks:{self.width}}"
@@ -62,7 +74,12 @@ class TimeFormatter:
             )
         if final:
             result = f"\x1b[1m{result}"
-        return colorize(result, self.color(time))
+            bg = None
+        elif "l" in self.flags:
+            bg = (128, 128, 128)
+        else:
+            bg = (0, 0, 0)
+        return colorize(result, self.color(time), background=bg)
 
 
 class StopWatch:
@@ -140,6 +157,8 @@ class StopWatch:
         numlen = len(fmt) - len(fmt.lstrip("0123456789"))
         width, flags = fmt[:numlen], fmt[numlen:]
         flags = set(flags)
+        if "b" not in flags and "l" in flags:
+            flags.remove("l")
         if width:
             width = int(width)
         else:
@@ -155,7 +174,10 @@ class StopWatch:
         buffer = io.StringIO()
         for code, lines in self.result.items():
             total = 0
-            buffer.write(f"Timings in {colorize(self.code_name(code), '1;36')}:\n")
+            buffer.write(f"Timings in \x1b[1m{colorize(self.code_name(code), (0, 255, 255))}")
+            if "l" in flags:
+                buffer.write(" (log scale)")
+            buffer.write(":\n")
             formatter.set_max(max(time for _, time, _ in lines))
             max_lno_len = len(str(max(lno for lno, _, _ in lines)))
             for lno, time, line in lines:
