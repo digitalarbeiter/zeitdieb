@@ -87,8 +87,6 @@ class TimeFormatter:
     def __call__(self, time, *, final=False):
         if "b" in self.flags and not final:
             if "l" in self.flags and time != 0:
-                # print("log:", time, log(time), self.max_time, log(self.max_time), log(time) / log(self.max_time), int(log(time) / log(self.max_time) * (self.width * 8)))
-                # 7.368624210357666e-06 -11.81827954349581 0.8887868821620941 -0.11789779980918104 100.24173108084997 4009
                 size = int(log(1+time) / log(1+self.max_time) * (self.width * 8))
             else:
                 size = int(time / self.max_time * (self.width * 8))
@@ -182,7 +180,6 @@ class StopWatch:
         if not self.result:
             return repr(self)
 
-        # <width>[p][:(1.22(,2.33)?]
         fmt, _, thresholds = fmt.partition(":")
         numlen = len(fmt) - len(fmt.lstrip("0123456789"))
         width, flags = fmt[:numlen], fmt[numlen:]
@@ -329,7 +326,8 @@ if __name__ == "__main__":
         bar()
         sleep(0.2)
         sw.finish()
-        print(f"{sw:7b:0.2,0.1}")
+        print(f"{sw:7:0.3,0.1}")
+        print(f"{sw:7b:0.3,0.1}")
 
     def bar():
         for _ in range(5):
