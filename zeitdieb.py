@@ -1,8 +1,10 @@
 import inspect
 import io
 import gc
+import re
 import sys
 import importlib
+from itertools import product
 from collections import defaultdict, Counter
 from time import monotonic
 from math import log
@@ -239,9 +241,32 @@ def load_dotted(spec):
     return result
 
 
+def expand_braces(text, seen=None):
+    # credits: Jim Pivarski
+    if "," in text and text[0] != "{":
+        text = f"{{{text}}}"
+    if seen is None:
+        seen = set()
+
+    spans = [m.span() for m in re.finditer(r"\{[^\{\}]*\}", text)][::-1]
+    alts = [text[start + 1 : stop - 1].split(",") for start, stop in spans]
+
+    if len(spans) == 0:
+        if text not in seen:
+            yield text
+        seen.add(text)
+
+    else:
+        for combo in product(*alts):
+            replaced = list(text)
+            for (start, stop), replacement in zip(spans, combo):
+                replaced[start:stop] = replacement
+
+            yield from expand_braces("".join(replaced), seen)
+
+
 def get_functions_to_trace(headers):
-    specs = headers["X-Zeitdieb"].split(",")
-    return [load_dotted(spec) for spec in specs]
+    return [load_dotted(spec) for spec in expand_braces(headers["X-Zeitdieb"])]
 
 
 def pyramid(handler, registry):
