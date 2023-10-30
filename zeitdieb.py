@@ -9,20 +9,49 @@ from math import log
 
 
 class ColorPicker:
+    COLOR_RANGE = {
+        3: [
+            (255, 0, 0),  # red
+            (255, 215, 0),  # orange
+            (255, 255, 200),  # yellow
+            (0, 255, 0),  # green
+        ],
+        2: [
+            (255, 0, 0),  # red
+            (255, 215, 0),  # orange
+            (0, 255, 0),  # green
+        ],
+        1: [
+            (255, 0, 0),  # red
+            (0, 255, 0),  # green
+        ],
+    }
+
     def __init__(self, thresholds):
         self.thresholds = thresholds
+        self.colors = self.COLOR_RANGE[len(self.thresholds)]
 
     def __call__(self, value):
-        for threshold, color in zip(
+        if value >= self.thresholds[0]:
+            # above highest threshold -> return "worst" color
+            return self.colors[0]
+        for start_color, stop_color, start, stop in zip(
+            self.colors,
+            self.colors[1:],
             self.thresholds,
-            [
-                (255, 0, 0),  # red
-                (255, 215, 0),  # orange
-            ],
+            self.thresholds[1:] + [0],
         ):
-            if value > threshold:
-                return color
-        return (0, 255, 0)
+            if start >= value >= stop:
+                fraction = (value - start) / (stop - start)
+                result = []
+                # color calculation:
+                # for each component (RGB), get the right point between the two colors
+                for first, second in zip(start_color, stop_color):
+                    diff = second - first
+                    result.append(int(first + fraction * diff))
+                return result
+        # below lowest threshold -> return "best" color
+        return self.colors[-1]
 
 
 def colorize(value, color, background=None):
