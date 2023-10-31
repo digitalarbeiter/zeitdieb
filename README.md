@@ -17,6 +17,17 @@ with StopWatch(additional, callables) as sw:
 print(sw)
 ```
 
+Alternatively, without using the context manager:
+
+```python
+sw = StopWatch(additional, callables)
+sw.start()
+your()
+code()
+sw.finish()
+print(sw)
+```
+
 
 ## Formatting
 
