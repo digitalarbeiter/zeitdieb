@@ -144,8 +144,8 @@ class StopWatch:
     def trace_line(self, frame, event, _arg):
         code = frame.f_code
         if event == "line":
-            self.open_frames.add(frame)
             t_now = monotonic()
+            self.open_frames.add(frame)
             self.times[code][self.l_last[code]] += t_now - self.t_last[code]
             self.l_last[code] = frame.f_lineno
             self.t_last[code] = monotonic()
@@ -193,6 +193,9 @@ class StopWatch:
             return repr(self)
 
         fmt, _, thresholds = fmt.partition(":")
+        fmt, _, min_duration = fmt.partition(">")
+        if min_duration:
+            min_duration = float(min_duration)
         numlen = len(fmt) - len(fmt.lstrip("0123456789"))
         width, flags = fmt[:numlen], fmt[numlen:]
         flags = set(flags)
@@ -212,7 +215,9 @@ class StopWatch:
 
         buffer = io.StringIO()
         for code, lines in self.result.items():
-            total = 0
+            total = sum(t for _, t, _ in lines)
+            if min_duration and total <= min_duration:
+                continue
             buffer.write(f"Timings in \x1b[1m{colorize(self.code_name(code), (0, 255, 255))}")
             if "l" in flags:
                 buffer.write(" (log scale)")
@@ -221,7 +226,6 @@ class StopWatch:
             max_lno_len = len(str(max(lno for lno, _, _ in lines)))
             for lno, time, line in lines:
                 buffer.write(f"{formatter(time)} {lno:{max_lno_len}d} {line}\n")
-                total += time
             buffer.write("─" * width + "\n")
             buffer.write(f"{formatter(total, final=True)}\n\n")
         return buffer.getvalue().strip()
