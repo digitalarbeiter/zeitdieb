@@ -112,7 +112,7 @@ class TimeFormatter:
 
 
 class StopWatch:
-    def __init__(self, *, trace=()):
+    def __init__(self, *trace):
         self.codes_to_trace = {f.__code__ for f in trace}
         self.lines = {}
         self.offset = {}
@@ -121,7 +121,19 @@ class StopWatch:
         self.l_last = {}
         self.open_frames = set()
         self.result = None
+
+    def start(self):
         sys.settrace(self.trace_scope)
+
+    def __enter__(self):
+        frame = sys._getframe(1)
+        self.start()
+        frame.f_trace = self.trace_line
+        self.prepare_frame(frame)
+        return self
+
+    def __exit__(self, exc_inst, exc_type, tb):
+        self.finish()
 
     def prepare_frame(self, frame):
         code = frame.f_code
@@ -130,7 +142,6 @@ class StopWatch:
         self.t_last[code] = monotonic()
 
     def trace_line(self, frame, event, _arg):
-        # print("tracing", frame, event, arg)
         code = frame.f_code
         if event == "line":
             self.open_frames.add(frame)
@@ -144,7 +155,6 @@ class StopWatch:
         return None
 
     def trace_scope(self, frame, _event, _arg):
-        # print("stracing", frame, event, arg)
         if frame.f_code in self.codes_to_trace:
             self.prepare_frame(frame)
             return self.trace_line
@@ -222,14 +232,6 @@ class StopWatch:
     def __repr__(self):
         return f"<{type(self).__name__} ({'un'*(not self.result) + 'finished'})>"
 
-    @classmethod
-    def install(cls, *functions_to_trace):
-        frame = sys._getframe(1)
-        stopwatch = cls(trace=functions_to_trace)
-        frame.f_trace = stopwatch.trace_line
-        stopwatch.prepare_frame(frame)
-        return stopwatch
-
 
 def load_dotted(spec):
     module_path, _, callable_name = spec.partition(":")
@@ -285,7 +287,8 @@ def pyramid(handler, registry):
         if "X-Zeitdieb" not in request.headers:
             return handler(request)
 
-        sw = StopWatch(trace=get_functions_to_trace(request.headers))
+        sw = StopWatch(*get_functions_to_trace(request.headers))
+        sw.start()
         res = handler(request)
         sw.finish()
         print(f"{sw:{fmt}}")
@@ -309,7 +312,8 @@ def flask(app):
     def before():
         if "X-Zeitdieb" not in flask.request.headers:
             return
-        flask.g.sw = StopWatch(trace=get_functions_to_trace(flask.request.headers))
+        flask.g.sw = StopWatch(*get_functions_to_trace(flask.request.headers))
+        flask.g.sw.start()
 
     @app.after_request
     def after(response):
@@ -334,7 +338,8 @@ def fastapi(app, settings=None):
     async def fastapi_middleware(request, call_next):
         if "X-Zeitdieb" not in request.headers:
             return await call_next(request)
-        sw = StopWatch(trace=get_functions_to_trace(request.headers))
+        sw = StopWatch(*get_functions_to_trace(request.headers))
+        sw.start()
         response = await call_next(request)
         sw.finish()
         print(f"{sw:{fmt}}")
@@ -345,12 +350,13 @@ if __name__ == "__main__":
     from time import sleep
 
     def foo():
-        sw = StopWatch.install(bar)
-        sleep(0.1)
-        sleep(0.3)
-        bar()
-        sleep(0.2)
-        sw.finish()
+        sw = StopWatch(bar)
+        with sw:
+            sleep(0.1)
+            bar()
+        sleep(0.1)  # not traced
+        with sw:
+            sleep(0.2)
         print(f"{sw:7:0.3,0.1}")
         print(f"{sw:7b:0.3,0.1}")
 

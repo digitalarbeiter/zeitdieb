@@ -2,7 +2,7 @@
 
 _Zeitdieb_ allows you to profile the time each line of your code takes.
 
-![Screenshot of the output of zeitdieb](https://raw.githubusercontent.com/digitalarbeiter/zeitdieb/master/zeitdieb.png)
+![Screenshot of the output of zeitdieb](https://raw.githubusercontent.com/digitalarbeiter/zeitdieb/master/screenshot.png)
 
 ```
 pip install zeitdieb
@@ -11,10 +11,9 @@ pip install zeitdieb
 ## Manual usage
 
 ```python
-sw = StopWatch.install(additional, callables)
-your()
-code()
-sw.finish()
+with StopWatch(additional, callables) as sw:
+    your()
+    code()
 print(sw)
 ```
 
