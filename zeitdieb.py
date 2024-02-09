@@ -353,19 +353,14 @@ def fastapi(app, settings=None):
 if __name__ == "__main__":
     from time import sleep
 
-    def foo():
-        sw = StopWatch(bar)
-        with sw:
-            sleep(0.1)
-            bar()
-        sleep(0.1)  # not traced
-        with sw:
-            sleep(0.2)
-        print(f"{sw:7:0.3,0.1}")
-        print(f"{sw:7b:0.3,0.1}")
-
-    def bar():
-        for _ in range(5):
-            sleep(0.1)
-
-    foo()
+    with StopWatch() as sw:
+        sleep(0.1)
+        sleep(0.2)
+        sleep(0.3)
+        sleep(0.4)
+        sleep(0.5)
+        sleep(0.6)
+        sleep(0.7)
+        sleep(0.8)
+        sleep(0.9)
+    print(f"{sw:2b:0.6,0.3}")
