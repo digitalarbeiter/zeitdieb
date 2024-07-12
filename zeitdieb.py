@@ -224,10 +224,19 @@ class StopWatch:
             buffer.write(":\n")
             formatter.set_max(max(time for _, time, _ in lines))
             max_lno_len = len(str(max(lno for lno, _, _ in lines)))
+            gap_marker_needed = False
             for lno, time, line in lines:
-                if "q" in flags and time <= thresholds[-1]:
+                if flags & {*"qQ"} and time <= thresholds[-1]:
+                    if "q" in flags:
+                        gap_marker_needed = True
                     continue
+                if gap_marker_needed:
+                    buffer.write("⋮\n")
+                    gap_marker_needed = False
                 buffer.write(f"{formatter(time)} {lno:{max_lno_len}d} {line}\n")
+            if gap_marker_needed:
+                buffer.write("⋮\n")
+                gap_marker_needed = False
             buffer.write("─" * width + "\n")
             buffer.write(f"{formatter(total, final=True)}\n\n")
         return buffer.getvalue().strip()
