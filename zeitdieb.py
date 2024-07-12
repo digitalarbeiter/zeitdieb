@@ -225,6 +225,8 @@ class StopWatch:
             formatter.set_max(max(time for _, time, _ in lines))
             max_lno_len = len(str(max(lno for lno, _, _ in lines)))
             for lno, time, line in lines:
+                if "q" in flags and time <= thresholds[-1]:
+                    continue
                 buffer.write(f"{formatter(time)} {lno:{max_lno_len}d} {line}\n")
             buffer.write("─" * width + "\n")
             buffer.write(f"{formatter(total, final=True)}\n\n")
