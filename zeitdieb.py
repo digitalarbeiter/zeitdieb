@@ -174,7 +174,7 @@ class StopWatch:
         for code in self.times:
             lines = []
             min_indent = min(len(line) - len(line.lstrip()) for line in self.lines[code])
-            for lno, line in enumerate(self.lines[code], start=1):
+            for lno, line in enumerate(self.lines[code]):
                 count = self.times[code][lno + self.offset[code]]
                 lines.append((lno + self.offset[code], count, line.rstrip()[min_indent:]))
             self.result[code] = lines
